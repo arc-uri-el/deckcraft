@@ -260,7 +260,12 @@ fn remap_media(shapes: &mut [Shape], map: &HashMap<MediaId, MediaId>) {
     };
     walk_mut(shapes, &mut |s| {
         match &mut s.kind {
-            deckcraft_model::ShapeKind::Picture { fill } => m(&mut fill.media),
+            deckcraft_model::ShapeKind::Picture { fill } => {
+                m(&mut fill.media);
+                if let Some(svg) = fill.svg.as_mut() {
+                    m(svg);
+                }
+            }
             deckcraft_model::ShapeKind::Media(c) => {
                 m(&mut c.media);
                 if let Some(p) = c.poster.as_mut() {
@@ -331,6 +336,7 @@ fn paste(s: &mut Session, p: &Value) -> Result<Value> {
                     && let Some(n) = media.get(&pf.media)
                 {
                     pf.media = *n;
+                    pf.svg = pf.svg.map(|s| media.get(&s).copied().unwrap_or(s));
                 }
                 if doc.layout(sl.layout).is_none() {
                     sl.layout = doc.masters.first().and_then(|m| m.layouts.first()).map(|l| l.id).unwrap_or_default();
